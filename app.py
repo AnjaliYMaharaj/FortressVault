@@ -7,70 +7,95 @@ import os
 # 1. Page Config
 st.set_page_config(page_title="Fortress Vault", page_icon="🛡️")
 
-# 2. Simple Authentication Logic
+# 2. Authentication Logic
 def check_password():
-    """Returns True if the user had the correct password."""
-    def password_entered():
-        # Change 'mysecret123' to whatever you want your master password to be
-        if st.session_state["password"] == st.secrets["MASTER_PASSWORD"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # don't store password
-        else:
-            st.session_state["password_correct"] = False
-
     if "password_correct" not in st.session_state:
-        # First run, show input for password
         st.title("🔐 Vault Access")
-        st.text_input("Enter Master Password", type="password", on_change=password_entered, key="password")
-        st.info("Identity is the first perimeter. Please authenticate to view your keys.")
+        pwd = st.text_input("Enter Master Password", type="password")
+        if st.button("Unlock"):
+            if pwd == st.secrets["MASTER_PASSWORD"]:
+                st.session_state["password_correct"] = True
+                st.rerun()
+            else:
+                st.error("Incorrect Password")
         return False
-    elif not st.session_state["password_correct"]:
-        # Password not correct, show input + error
-        st.title("🔐 Vault Access")
-        st.text_input("Enter Master Password", type="password", on_change=password_entered, key="password")
-        st.error("😕 Password incorrect")
-        return False
-    else:
-        # Password correct
-        return True
+    return True
 
-# 3. Only run the app if authenticated
 if check_password():
-    
-    # --- VAULT APP CODE STARTS HERE ---
     st.title("🛡️ Fortress Vault")
-    
-    # Setup Storage
     VAULT_FILE = "vault.csv"
 
-    def save_to_vault(site, password):
-        new_data = pd.DataFrame([[site, password]], columns=["Website", "Password"])
-        if os.path.isfile(VAULT_FILE):
-            new_data.to_csv(VAULT_FILE, mode='a', index=False, header=False)
-        else:
-            new_data.to_csv(VAULT_FILE, index=False)
+    # --- SECTION 1: GENERATOR WITH STRENGTH METER ---
+    st.header("🔑 Password Generator")
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        site_name = st.text_input("Website Name:", placeholder="e.g., GitHub")
+        length = st.slider("Length", 8, 32, 16)
+    
+    with col2:
+        use_digits = st.checkbox("Numbers", value=True)
+        use_special = st.checkbox("Symbols", value=True)
 
-    # --- GENERATOR SECTION ---
-    st.header("🔑 New Entry")
-    site_name = st.text_input("Website Name:")
-    if st.button("Generate & Store"):
+    # Strength Logic
+    strength_score = 0
+    if length >= 12: strength_score += 1
+    if length >= 16: strength_score += 1
+    if use_digits: strength_score += 1
+    if use_special: strength_score += 1
+
+    # Visual Meter
+    if strength_score <= 1:
+        st.error("Strength: WEAK")
+        st.progress(25)
+    elif strength_score == 2:
+        st.warning("Strength: FAIR")
+        st.progress(50)
+    elif strength_score == 3:
+        st.info("Strength: STRONG")
+        st.progress(75)
+    else:
+        st.success("Strength: EXTREME")
+        st.progress(100)
+
+    if st.button("Generate & Save"):
         if site_name:
-            chars = string.ascii_letters + string.digits + "!@#$%^&*"
-            pwd = ''.join(random.choice(chars) for _ in range(16))
-            save_to_vault(site_name, pwd)
-            st.success(f"Key saved for {site_name}!")
+            chars = string.ascii_letters
+            if use_digits: chars += string.digits
+            if use_special: chars += "!@#$%^&*"
+            pwd = ''.join(random.choice(chars) for _ in range(length))
+            
+            # Save to CSV
+            new_entry = pd.DataFrame([[site_name, pwd]], columns=["Website", "Password"])
+            if os.path.isfile(VAULT_FILE):
+                new_entry.to_csv(VAULT_FILE, mode='a', index=False, header=False)
+            else:
+                new_entry.to_csv(VAULT_FILE, index=False)
+            st.success(f"Saved! Password: `{pwd}`")
         else:
-            st.warning("Enter a site name.")
+            st.warning("Please enter a website name.")
 
-    # --- MANAGER SECTION ---
+    # --- SECTION 2: EDITABLE MANAGER & DOWNLOAD ---
     st.divider()
-    st.header("🗄️ Your Stored Keys")
+    st.header("🗄️ Managed Vault")
+    
     if os.path.isfile(VAULT_FILE):
         df = pd.read_csv(VAULT_FILE)
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.info("Vault is empty.")
+        
+        # Edit and Delete interface
+        edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
+        
+        if st.button("💾 Save Changes"):
+            edited_df.to_csv(VAULT_FILE, index=False)
+            st.success("Vault Updated!")
+            st.rerun()
 
-    if st.button("Logout"):
-        st.session_state["password_correct"] = False
+        # Download Backup
+        csv = edited_df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download Backup", data=csv, file_name="vault_backup.csv", mime="text/csv")
+    else:
+        st.info("No passwords saved yet.")
+
+    if st.sidebar.button("Logout"):
+        st.session_state.clear()
         st.rerun()
