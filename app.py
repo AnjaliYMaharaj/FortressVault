@@ -30,14 +30,29 @@ if check_password():
     
     VAULT_FILE = "vault.csv"
 
-    # --- SIDEBAR: LOGOUT & UTILS ---
+    # --- SIDEBAR: ACCESS & CONTACT ---
     with st.sidebar:
-        st.header("Settings")
+    st.header("🔐 Vault Access")
+    
+    if st.session_state.get("password_correct"):
+        st.success("Authenticated")
         if st.button("Logout"):
             st.session_state.clear()
             st.rerun()
-        st.divider()
-        st.info("Fortress Vault uses local CSV storage for your credentials.")
+    else:
+        st.warning("Locked")
+        st.markdown("""
+        **How to gain access:**
+        This is a private demo. To explore the vault's features, please request the Master Password.
+        """)
+        
+        # Link to your LinkedIn or Email
+        st.link_button("🤝 Request Key via Emailon LinkedIn", "https://forms.gle/Fou3KeXjTzYi5RBPA")
+        st.caption("Or email: yourname@example.com")
+
+    st.divider()
+    st.header("📖 About")
+    st.info("Fortress Vault is a portfolio project focused on digital safety and human-centered security design.")
 
     # --- SECTION 1: GENERATOR & STRENGTH METER ---
     st.header("🔑 Generator")
@@ -137,4 +152,5 @@ if check_password():
 
     st.divider()
     st.caption("Build with focus on Digital Safety and Human-Centered Security.")
+
 
