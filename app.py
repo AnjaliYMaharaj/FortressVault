@@ -32,7 +32,7 @@ if check_password():
 
     # --- SIDEBAR: ACCESS & CONTACT ---
     with st.sidebar:
-    st.header("🔐 Vault Access")
+        st.header("🔐 Vault Access")
     
     if st.session_state.get("password_correct"):
         st.success("Authenticated")
@@ -152,5 +152,6 @@ if check_password():
 
     st.divider()
     st.caption("Build with focus on Digital Safety and Human-Centered Security.")
+
 
 
