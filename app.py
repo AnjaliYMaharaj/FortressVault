@@ -36,7 +36,7 @@ def check_password():
             st.markdown("### Request Entry")
             st.write("If you are a recruiter or collaborator, please use the link below to request the Master Password.")
             st.link_button("🤝 Request Key via Form", "https://forms.gle/Fou3KeXjTzYi5RBPA")
-            st.caption("Verification usually takes less than 24 hours.")
+            st.caption("After requesting access, the confirmation window will provide further instructions.")
             
         return False
     return True
@@ -148,3 +148,4 @@ if check_password():
 
     st.divider()
     st.caption("Build with focus on Digital Safety and Human-Centered Security.")
+
